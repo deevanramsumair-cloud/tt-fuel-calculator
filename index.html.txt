@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>T&T Fuel Cost Calculator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --border:    #2a2f3a;
+      --accent:    #e8a020;   /* petrol-station amber */
+      --accent-dim:#7a5210;
+      --text:      #e6edf3;
+      --muted:     #7d8590;
+      --green:     #3fb950;
+      --radius:    10px;
+      --font-sans: 'Space Grotesk', sans-serif;
+      --font-mono: 'Space Mono', monospace;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 3rem;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      margin-bottom: 2.2rem;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.55rem;
+    }
+    h1 {
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      font-weight: 700;
+      line-height: 1.15;
+      color: var(--text);
+    }
+    h1 span { color: var(--accent); }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    /* ── Fuel selector ── */
+    .label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+      display: block;
+    }
+    .fuel-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.6rem;
+      margin-bottom: 1.6rem;
+    }
+    .fuel-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0.7rem 0.4rem;
+      text-align: center;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      font-family: var(--font-sans);
+    }
+    .fuel-btn .fname {
+      display: block;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+    .fuel-btn .fprice {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      margin-top: 0.2rem;
+      color: var(--muted);
+    }
+    .fuel-btn.active {
+      border-color: var(--accent);
+      background: #1e1608;
+      color: var(--text);
+    }
+    .fuel-btn.active .fprice { color: var(--accent); }
+    .fuel-btn:hover:not(.active) { border-color: #444; }
+
+    /* ── Inputs ── */
+    .field { margin-bottom: 1.4rem; }
+    .input-wrap {
+      position: relative;
+    }
+    input[type="number"] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 1.05rem;
+      padding: 0.75rem 3.8rem 0.75rem 1rem;
+      outline: none;
+      transition: border-color 0.15s;
+      -moz-appearance: textfield;
+    }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    input[type="number"]:focus { border-color: var(--accent); }
+    .unit-tag {
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    /* ── Calculate button ── */
+    .calc-btn {
+      width: 100%;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius);
+      color: #0d0900;
+      cursor: pointer;
+      font-family: var(--font-sans);
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 0.9rem;
+      margin-top: 0.4rem;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .calc-btn:hover { opacity: 0.9; }
+    .calc-btn:active { transform: scale(0.98); }
+
+    /* ── Results ── */
+    .results {
+      margin-top: 1.6rem;
+      border-top: 1px solid var(--border);
+      padding-top: 1.4rem;
+      display: none;
+    }
+    .results.visible { display: block; }
+    .results-title {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 0.55rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.92rem;
+    }
+    .result-row:last-of-type { border-bottom: none; }
+    .result-key { color: var(--muted); }
+    .result-val {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--text);
+    }
+    .total-row {
+      background: #111a0a;
+      border: 1px solid var(--green);
+      border-radius: var(--radius);
+      padding: 0.9rem 1rem;
+      margin-top: 0.9rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .total-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .total-amount {
+      font-family: var(--font-mono);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--green);
+    }
+
+    /* ── Error ── */
+    .error-msg {
+      color: #f85149;
+      font-size: 0.82rem;
+      margin-top: 0.5rem;
+      display: none;
+    }
+    .error-msg.visible { display: block; }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 1.8rem;
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <p class="eyebrow">Trinidad &amp; Tobago</p>
+    <h1>Fuel Cost<br><span>Calculator</span></h1>
+  </header>
+
+  <div class="card">
+
+    <!-- Fuel Type -->
+    <span class="label">Fuel type</span>
+    <div class="fuel-grid">
+      <button class="fuel-btn active" data-fuel="super" onclick="selectFuel(this)">
+        <span class="fname">Super</span>
+        <span class="fprice">$5.97 / L</span>
+      </button>
+      <button class="fuel-btn" data-fuel="premium" onclick="selectFuel(this)">
+        <span class="fname">Premium</span>
+        <span class="fprice">$7.75 / L</span>
+      </button>
+      <button class="fuel-btn" data-fuel="diesel" onclick="selectFuel(this)">
+        <span class="fname">Diesel</span>
+        <span class="fprice">$4.41 / L</span>
+      </button>
+    </div>
+
+    <!-- Consumption -->
+    <div class="field">
+      <label class="label" for="consumption">Fuel consumption</label>
+      <div class="input-wrap">
+        <input type="number" id="consumption" placeholder="e.g. 11.9" min="0.1" step="0.1" />
+        <span class="unit-tag">L/100km</span>
+      </div>
+    </div>
+
+    <!-- Distance -->
+    <div class="field">
+      <label class="label" for="distance">Distance to travel</label>
+      <div class="input-wrap">
+        <input type="number" id="distance" placeholder="e.g. 100" min="1" step="1" />
+        <span class="unit-tag">km</span>
+      </div>
+    </div>
+
+    <p class="error-msg" id="error">Please enter valid values for both fields.</p>
+
+    <button class="calc-btn" onclick="calculate()">Calculate cost →</button>
+
+    <!-- Results -->
+    <div class="results" id="results">
+      <p class="results-title">Breakdown</p>
+      <div class="result-row">
+        <span class="result-key">Distance</span>
+        <span class="result-val" id="out-distance">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-key">Consumption</span>
+        <span class="result-val" id="out-consumption">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-key">Fuel needed</span>
+        <span class="result-val" id="out-litres">—</span>
+      </div>
+      <div class="result-row">
+        <span class="result-key">Price per litre</span>
+        <span class="result-val" id="out-price">—</span>
+      </div>
+      <div class="total-row">
+        <span class="total-label">Total estimated cost</span>
+        <span class="total-amount" id="out-total">—</span>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    Fuel prices fixed per government regulation (TTD).<br>
+    Actual costs may vary with driving conditions.
+  </footer>
+
+  <script>
+    const PRICES = { super: 5.97, premium: 7.75, diesel: 4.41 };
+    let selectedFuel = 'super';
+
+    function selectFuel(btn) {
+      document.querySelectorAll('.fuel-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedFuel = btn.dataset.fuel;
+    }
+
+    function calculate() {
+      const consumption = parseFloat(document.getElementById('consumption').value);
+      const distance    = parseFloat(document.getElementById('distance').value);
+      const err         = document.getElementById('error');
+      const results     = document.getElementById('results');
+
+      if (!consumption || !distance || consumption <= 0 || distance <= 0) {
+        err.classList.add('visible');
+        results.classList.remove('visible');
+        return;
+      }
+      err.classList.remove('visible');
+
+      const price       = PRICES[selectedFuel];
+      const litresUsed  = (consumption / 100) * distance;
+      const totalCost   = litresUsed * price;
+
+      document.getElementById('out-distance').textContent    = distance.toLocaleString('en-TT', { maximumFractionDigits: 1 }) + ' km';
+      document.getElementById('out-consumption').textContent = consumption.toFixed(1) + ' L/100km';
+      document.getElementById('out-litres').textContent      = litresUsed.toFixed(2) + ' L';
+      document.getElementById('out-price').textContent       = 'TTD $' + price.toFixed(2);
+      document.getElementById('out-total').textContent       = 'TTD $' + totalCost.toFixed(2);
+
+      results.classList.add('visible');
+    }
+
+    // Allow Enter key to trigger calculation
+    document.addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
+  </script>
+
+</body>
+</html>
